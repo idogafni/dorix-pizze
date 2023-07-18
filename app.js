@@ -1,4 +1,5 @@
 const express = require('express');
+const { restaurant } = require('./server');
 const app = express();
 app.use(express.json());
 
