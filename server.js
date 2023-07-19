@@ -1,3 +1,5 @@
+const Queue = require('bull');
+
 class PizzaOrder {
     constructor(orderId, toppings) {
         this.orderId = orderId;
@@ -27,7 +29,7 @@ class PizzaOrder {
 
 class Chef {
     constructor(type, numberOfChefs) {
-        this.queue = new Queue(type, 'redis://127.0.0.1:6379');
+        this.queue = Queue(type, 'redis://127.0.0.1:6379');
         this.queue.process(numberOfChefs, async (job, done) => {
             await job.data.pizza[`prepare${type.charAt(0).toUpperCase() + type.slice(1)}`]();
             done();
@@ -78,3 +80,4 @@ class Restaurant {
 
 
 const restaurant = new Restaurant();
+module.exports = { restaurant };
