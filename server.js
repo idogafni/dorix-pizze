@@ -44,10 +44,13 @@ class Restaurant {
         this.doughChefs = new Chef('dough', process.env.DOUGH_CHEFS);
         this.toppingChefs = new Chef('toppings', process.env.TOPPING_CHEFS);
         this.oven = new Chef('oven', 1);
+        this.orders = {};
     }
 
-    async handleOrder(order) {
-        const pizzas = order.map((pizza, index) => new PizzaOrder(index, pizza.toppings));
+    async createOrder(order) {
+        const pizzas = order.map((pizza, index) => new PizzaOrder(index, pizza.toppings_amount));
+        const orderId = Math.floor(Math.random() * 10000);
+        this.orders[orderId] = pizzas;
 
         for (const pizza of pizzas) {
             const doughJob = await this.doughChefs.addToQueue(pizza);
@@ -59,12 +62,19 @@ class Restaurant {
                     const ovenJob = await this.oven.addToQueue(pizza);
 
                     ovenJob.finished().then(() => {
-                        console.log(`Pizza ${pizza.orderId} is ready! Processing times: ${JSON.stringify(pizza.processingTime)}`);
+                        console.log(`Pizza ${pizza.orderId} is ready! Status: ${JSON.stringify(pizza.status)}`);
                     });
                 });
             });
         }
+
+        return orderId;
+    }
+
+    getOrderStatus(orderId) {
+        return this.orders[orderId]?.map(pizza => pizza.status);
     }
 }
+
 
 const restaurant = new Restaurant();
