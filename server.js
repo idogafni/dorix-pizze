@@ -12,28 +12,39 @@ class PizzaOrder {
     }
 
     async prepareDough() {
-        await new Promise(resolve => setTimeout(resolve, process.env.DOUGH_TIME));
-        this.processingTime.dough = process.env.DOUGH_TIME;
+        await new Promise(resolve => setTimeout(resolve, Number(process.env.DOUGH_TIME)));
+        this.processingTime.dough = Number(process.env.DOUGH_TIME);
     }
 
     async addToppings() {
-        await new Promise(resolve => setTimeout(resolve, this.toppings * process.env.TOPPING_TIME));
-        this.processingTime.toppings = this.toppings * process.env.TOPPING_TIME;
+        await new Promise(resolve => setTimeout(resolve, this.toppings * Number(process.env.TOPPING_TIME)));
+        this.processingTime.toppings = this.toppings * Number(process.env.TOPPING_TIME);
     }
 
     async cook() {
-        await new Promise(resolve => setTimeout(resolve, process.env.OVEN_TIME));
-        this.processingTime.oven = process.env.OVEN_TIME;
+        await new Promise(resolve => setTimeout(resolve, Number(process.env.OVEN_TIME)));
+        this.processingTime.oven = Number(process.env.OVEN_TIME);
     }
 }
 
 class Chef {
     constructor(type, numberOfChefs) {
-        this.queue = Queue(type, 'redis://127.0.0.1:6379');
-        this.queue.process(numberOfChefs, async (job, done) => {
-            await job.data.pizza[`prepare${type.charAt(0).toUpperCase() + type.slice(1)}`]();
-            done();
+        this.queue = new Queue(type, {
+            redis: {
+                host: '127.0.0.1',
+                port: 6379
+            }
         });
+        this.queue.process(numberOfChefs, async (job, done) => {
+            try {
+                await job.data.pizza[`prepare${type.charAt(0).toUpperCase() + type.slice(1)}`]();
+                done();
+            } catch (error) {
+                console.error(`Error processing job for pizza ${job.data.pizza.orderId} with type ${type}:`, error);
+                done(error);
+            }
+        });
+        
     }
 
     addToQueue(pizza) {
@@ -74,7 +85,7 @@ class Restaurant {
     }
 
     getOrderStatus(orderId) {
-        return this.orders[orderId]?.map(pizza => pizza.status);
+        return this.orders[orderId]?.map(pizza => pizza.processingTime);
     }
 }
 
